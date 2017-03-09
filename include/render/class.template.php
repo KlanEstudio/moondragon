@@ -7,23 +7,23 @@
  * @author Noé Francisco Martínez Merino <noe.martinez@itca.edu.sv>
  * @copyright Klan Estudio (www.klanestudio.com) - GNU Lesser General Public License
  * @ingroup Render
- * 
+ *
  */
-            
-class Template 
+
+class Template
 {
 	/**
 	 * Ruta de directorios para plantillas
 	 * @var array $dir
 	 */
 	private static $dir = array('./');
-	
+
 	/**
 	 * Nombre de la plantilla actual
 	 * @var string $template
 	 */
 	private $template;
-		
+
 	/**
 	 * Variables para ser reemplazadas en la plantilla
 	 * @var array $vars
@@ -35,7 +35,7 @@ class Template
 	 * @var string $content
 	 */
 	private $content = '';
-	
+
 	/**
 	 * Determina si una plantilla es del tipo página
 	 * @var boolean $page
@@ -73,8 +73,9 @@ class Template
 	public function setTemplate( $template, $page = false )
 	{
 		$found = false;
-		
+
 		assert('!empty(self::$dir)');
+		$template = str_replace(':', '/', $template);
 		foreach(self::$dir as $dir) {
 			if(file_exists($dir.$template)) {
 				$this->template = $dir.$template;
@@ -89,9 +90,9 @@ class Template
 		if(!$found){
 			throw new TemplateNotFoundException();
 		}
-		
+
 		assert('file_exists($this->template)');
-		
+
 		if(strpos($this->template, 'page.') !== false) {
 			$this->page = true;
 		}
@@ -99,7 +100,7 @@ class Template
 			$this->page = $page;
 		}
 		$this->content = '';
-		
+
 		return $this;
 	}
 
@@ -111,7 +112,7 @@ class Template
 	public function setVars( $vars )
 	{
 		$this->vars = $vars;
-		
+
 		return $this;
 	}
 
@@ -150,7 +151,7 @@ class Template
 				$this->content = '';
 				throw new RenderException( _('No se pudo leer la plantilla') );
 			}
-	
+
 			$this->content = fread( $file_data, filesize( $this->template ) );
 			fclose( $file_data );
 		}
@@ -169,27 +170,27 @@ class Template
 			$this->content = str_replace( '[#:'.$key.']', $var, $this->content );
 		}
 		$this->content = preg_replace( '/\[\#:(\w*)\]/s', '', $this->content );
-		
+
 		if($this->page) {
-			preg_match_all('/<md:(\w*|\w+:\w+)\/>/i', $this->content, $templates);
-			
 			$this->content = str_replace('<md:content/>', Buffer::getContent('output'), $this->content);
+			preg_match_all('/<md:(\w*|\w+:\w+)\/>/i', $this->content, $templates);
+
 			foreach($templates[1] as $tpl)
 			{
 				$this->content = str_replace('<md:'.$tpl.'/>', self::load($tpl, $this->vars), $this->content);
 			}
-			
+
 			$this->content = str_replace('</head>', Buffer::getContent('meta').'</head>', $this->content);
 			$this->content = str_replace('</body>', Buffer::getContent('error').'</body>', $this->content);
 			$this->content = str_replace('</body>', Buffer::getContent('script').'</body>', $this->content);
-			
+
 			if(isset(MoonDragon::$registry['base_url']))
 			{
 				$this->content = str_replace('<head>', '<head><base href="'.MoonDragon::$registry['base_url'].'/" />', $this->content);
 			}
 		}
 	}
-	
+
 	/**
 	 * Agrega una ruta de directorio al sistema de plantillas
 	 * @param string $dir
